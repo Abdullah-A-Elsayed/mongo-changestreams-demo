@@ -12,19 +12,6 @@ async function watchInventoryChanges() {
     });
     console.log("🔍 Watching for inventory changes...");
 
-    changeStream.on("change", async (change) => {
-      if (
-        change.updateDescription?.updatedFields.count &&
-        change.fullDocumentBeforeChange?.count === 0
-      ) {
-        const item = change.fullDocument;
-
-        sendItemStockEmail(item);
-      } else {
-        console.log("Change discared!");
-      }
-    });
-
     // Handle errors
     changeStream.on("error", (error) => {
       console.error("Error in change stream:", error);
@@ -42,6 +29,20 @@ async function watchInventoryChanges() {
       await client.close();
       process.exit(0);
     });
+
+    while (true) {
+      const change = await changeStream.next();
+      if (
+        change.updateDescription?.updatedFields.count &&
+        change.fullDocumentBeforeChange?.count === 0
+      ) {
+        const item = change.fullDocument;
+
+        sendItemStockEmail(item);
+      } else {
+        console.log("Change discared!");
+      }
+    }
   } catch (error) {
     console.error("Error setting up change stream:", error);
     await client.close();

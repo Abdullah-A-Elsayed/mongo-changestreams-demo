@@ -24,12 +24,6 @@ async function watchInventoryChanges() {
     );
     console.log("🔍 Watching for inventory changes...");
 
-    changeStream.on("change", async (change) => {
-      const item = change.fullDocument;
-
-      sendItemStockEmail(item);
-    });
-
     // Handle errors
     changeStream.on("error", (error) => {
       console.error("Error in change stream:", error);
@@ -47,6 +41,13 @@ async function watchInventoryChanges() {
       await client.close();
       process.exit(0);
     });
+
+    while (true) {
+      const change = await changeStream.next();
+      const item = change.fullDocument;
+
+      sendItemStockEmail(item);
+    }
   } catch (error) {
     console.error("Error setting up change stream:", error);
     await client.close();
